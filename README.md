@@ -1,6 +1,6 @@
 chessmaster3000
 ===============
-given a board state in (FEN)[https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation] format, outputs all possible moves for the active player (determined by file format's active player field)
+given a board state in [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) format, outputs all possible moves for the active player (determined by file format's active player field)
 
 * handles castling and en passant, but not check/checkmate restrictions
 * uses modern es6 features as much as possible in appropriate situations
