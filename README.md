@@ -20,5 +20,7 @@ inputs
 * input2: after 1. e4 (black's turn)
 * input3: after 1. c5 (white's turn)
 * input4: after 2. Nf3 (black's turn)
-* input5: en passant example
+* input5: en passant example (black's turn)
 * input6: castling example (white's turn)
+* input7: complex case with no white pawns (white's turn)
+* input8: queen test on empty board (white's turn)

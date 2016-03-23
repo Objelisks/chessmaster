@@ -15,143 +15,6 @@ let notationToRankFile = function(note) {
   return rf;
 };
 
-// checks to see if position is within the bounds of the board
-let onBoard = function(rank, file) {
-  return rank >= 0 && rank <= 7 && file >= 0 && file <= 7;
-};
-
-// checks to see if position is not empty (empty spaces have null owner)
-let pieceAt = function(rank, file, state) {
-  return onBoard(rank, file) && state.board[rank][file].owner !== null;
-};
-
-// checks to see if position is not empty and target piece is owned by a specific player
-let ownedPieceAt = function(rank, file, player, state) {
-  return onBoard(rank, file) && state.board[rank][file].owner === player;
-};
-
-// checks to see if position is empty or contains an opponent's piece
-let movableSpace = function(rank, file, player, state) {
-  return onBoard(rank, file) && (state.board[rank][file].owner === null || state.board[rank][file].owner !== player);
-};
-
-// checks to see if position supports an 'en passant' attack
-let enPassant = function(rank, file, state) {
-  return state.enPassant !== null && state.enPassant[0] === rank && state.enPassant[1] === file;
-};
-
-// symmetrical movesets (reusable)
-// pieces that jump over pieces
-let leaper = function(dirs) {
-  return function(p, state) {
-    let rank = p.rank, file = p.file;
-
-    // mirror all the directions, set requires strings :(
-    let symmetricalDirs = dirs.reduce((set, dir) => {
-      set.add(dir.toString());
-      set.add([dir[0]*-1, dir[1]].toString());
-      set.add([dir[0], dir[1]*-1].toString());
-      set.add([dir[0]*-1, dir[1]*-1].toString());
-      return set;
-    }, new Set());
-
-    // transform back from set format
-    // filter out moves that aren't on the board
-    // convert from relative movement to absolute positions
-    let validMoves = Array.from(symmetricalDirs.values())
-      .map(dirStr => dirStr.split(',').map(dir => parseInt(dir)))
-      .filter(dir => movableSpace(rank+dir[0], file+dir[1], p.owner, state))
-      .map(dir => [rank+dir[0], file+dir[1]]);
-
-    return validMoves;
-  };
-};
-
-// pieces move as long as nothing obstructs
-let rider = function(dirs) {
-  return function(p, state) {
-    let rank = p.rank, file = p.file;
-
-    // walk along direction starting from rank and file of surrounding scope
-    let getAllSpacesInDir = function(dir) {
-      let pos = [rank + dir[0], file + dir[1]];
-      let spaces = [];
-      while(movableSpace(pos[0], pos[1], p.owner, state)) {
-        spaces.push(pos.slice());
-        pos[0] += dir[0];
-        pos[1] += dir[1];
-      }
-      return spaces;
-    }
-
-    // mirror each direction over x and y
-    // set requires use of strings to work correctly with arrays :(
-    let symmetricalDirs = dirs.reduce((set, dir) => {
-      set.add(dir.toString());
-      set.add([dir[0]*-1, dir[1]].toString());
-      set.add([dir[0], dir[1]*-1].toString());
-      set.add([dir[0]*-1, dir[1]*-1].toString());
-      return set;
-    }, new Set());
-
-    // transform back from set strings
-    // walk along directions and get all spaces
-    let validMoves = Array.from(symmetricalDirs.values())
-      .map(dirStr => dirStr.split(',').map(dir => parseInt(dir)))
-      .reduce((arr, dir) => arr.concat(getAllSpacesInDir(dir)), []);
-
-    return validMoves;
-  };
-};
-
-// functions that take a piece and return possible moves for that piece
-const rules = {
-  // pawns have weird rules
-  "p": function(p, state) {
-    let moves = [];
-    let rank = p.rank, file = p.file;
-    let side = p.owner === 'w' ? -1 : 1;
-    let opponent = p.owner === 'w' ? 'b' : 'w';
-
-    // regular movement
-    if(movableSpace(rank+side, file, opponent, state)) {
-      moves.push([rank+side, file]);
-    }
-
-    // two space movement as first move
-    if(side === 1 && rank === 1 && !pieceAt(rank+1, file, state)) {
-        moves.push([rank+2, file]);
-    } else if(side === -1 && rank === 6 && !pieceAt(rank-1, file, state)) {
-        moves.push([rank-2, file]);
-    }
-
-    // attack movement including en passant
-    if(ownedPieceAt(rank+side, file+1, opponent, state) || enPassant(rank+side, file+1, state)) {
-      moves.push([rank+side, file+1]);
-    }
-    if(ownedPieceAt(rank+side, file-1, opponent, state) || enPassant(rank+side, file-1, state)) {
-      moves.push([rank+side, file-1]);
-    }
-
-    return moves;
-  },
-
-  // jump 2,1 in any direction
-  "n": leaper([[2,1], [1,2]]),
-
-  // slide horizontally
-  "r": rider([[1,0], [0,1]]),
-
-  // slide diagonally
-  "b": rider([[1,1]]),
-
-  // slide in any direction
-  "q": rider([[1,0], [0,1], [1,1]]),
-
-  // jump directly to single space in any direction
-  "k": leaper([[1,0], [0,1], [1,1]])
-};
-
 // reads FEN file format, assumes file has valid formatting
 // https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
 // output: {board, playerTurn, castling, enPassant}
@@ -212,13 +75,159 @@ let importFile = function(filename) {
   return state;
 };
 
+// checks to see if position is within the bounds of the board
+let onBoard = function(rank, file) {
+  return rank >= 0 && rank <= 7 && file >= 0 && file <= 7;
+};
+
+// checks to see if position is not empty (empty spaces have null owner)
+let pieceAt = function(rank, file, state) {
+  return onBoard(rank, file) && state.board[rank][file].owner !== null;
+};
+
+// checks to see if position is not empty and target piece is owned by a specific player
+let ownedPieceAt = function(rank, file, player, state) {
+  return onBoard(rank, file) && state.board[rank][file].owner === player;
+};
+
+// checks to see if position is empty or contains an opponent's piece
+let movableSpace = function(rank, file, player, state) {
+  return onBoard(rank, file) && (state.board[rank][file].owner === null || state.board[rank][file].owner !== player);
+};
+
+// checks to see if position supports an 'en passant' attack
+let enPassant = function(rank, file, state) {
+  return state.enPassant !== null && state.enPassant[0] === rank && state.enPassant[1] === file;
+};
+
+// reusable symmetrical moveset functions
+// generic names from https://en.wikipedia.org/wiki/Fairy_chess_piece
+
+// pieces that jump over pieces (knight, king)
+let leaper = function(dirs) {
+  return function(p, state) {
+    let rank = p.rank, file = p.file;
+
+    // mirror all the directions, set requires strings :(
+    let symmetricalDirs = dirs.reduce((set, dir) => {
+      set.add(dir.toString());
+      set.add([dir[0]*-1, dir[1]].toString());
+      set.add([dir[0], dir[1]*-1].toString());
+      set.add([dir[0]*-1, dir[1]*-1].toString());
+      return set;
+    }, new Set());
+
+    // transform back from set format
+    // filter out moves that aren't on the board
+    // convert from relative movement to absolute positions
+    let validMoves = Array.from(symmetricalDirs.values())
+      .map(dirStr => dirStr.split(',').map(dir => parseInt(dir)))
+      .filter(dir => movableSpace(rank+dir[0], file+dir[1], p.owner, state))
+      .map(dir => [rank+dir[0], file+dir[1]]);
+
+    return validMoves;
+  };
+};
+
+// pieces move as long as nothing obstructs (rook, bishop, queen)
+let rider = function(dirs) {
+  return function(p, state) {
+    let rank = p.rank, file = p.file;
+    let opponent = p.owner === 'w' ? 'b' : 'w';
+
+    // walk along direction starting from rank and file of surrounding scope
+    let getAllSpacesInDir = function(dir) {
+      let pos = [rank + dir[0], file + dir[1]];
+      let spaces = [];
+
+      // move until we get to a piece or the edge of the board
+      while(onBoard(pos[0], pos[1]) && !pieceAt(pos[0], pos[1], state)) {
+        spaces.push(pos.slice());
+        pos[0] += dir[0];
+        pos[1] += dir[1];
+      }
+
+      // check the piece we just hit, and add it if it is an opponent piece
+      if(ownedPieceAt(pos[0], pos[1], opponent, state)) {
+        spaces.push(pos.slice());
+      }
+
+      return spaces;
+    }
+
+    // mirror each direction over x and y
+    let symmetricalDirs = dirs.reduce((set, dir) => {
+      set.add(dir.toString());
+      set.add([dir[0]*-1, dir[1]].toString());
+      set.add([dir[0], dir[1]*-1].toString());
+      set.add([dir[0]*-1, dir[1]*-1].toString());
+      return set;
+    }, new Set());
+
+    // transform back from set strings
+    // walk along directions and get all spaces
+    let validMoves = Array.from(symmetricalDirs.values())
+      .map(dirStr => dirStr.split(',').map(dir => parseInt(dir)))
+      .reduce((arr, dir) => arr.concat(getAllSpacesInDir(dir)), []);
+
+    return validMoves;
+  };
+};
+
+// functions that take a piece and return possible moves for that piece
+// these will be used later for each individual piece on the board
+const rules = {
+  // pawns have weird rules
+  "p": function(p, state) {
+    let moves = [];
+    let rank = p.rank, file = p.file;
+    let side = p.owner === 'w' ? -1 : 1;
+    let opponent = p.owner === 'w' ? 'b' : 'w';
+
+    // regular movement
+    if(movableSpace(rank+side, file, opponent, state)) {
+      moves.push([rank+side, file]);
+    }
+
+    // two space movement as first move
+    if(side === 1 && rank === 1 && !pieceAt(rank+1, file, state)) {
+        moves.push([rank+2, file]);
+    } else if(side === -1 && rank === 6 && !pieceAt(rank-1, file, state)) {
+        moves.push([rank-2, file]);
+    }
+
+    // attack movement including en passant
+    if(ownedPieceAt(rank+side, file+1, opponent, state) || enPassant(rank+side, file+1, state)) {
+      moves.push([rank+side, file+1]);
+    }
+    if(ownedPieceAt(rank+side, file-1, opponent, state) || enPassant(rank+side, file-1, state)) {
+      moves.push([rank+side, file-1]);
+    }
+
+    return moves;
+  },
+
+  // knights jump 2,1 in any direction
+  "n": leaper([[2,1], [1,2]]),
+
+  // rooks slide horizontally
+  "r": rider([[1,0], [0,1]]),
+
+  // bishop slide diagonally
+  "b": rider([[1,1]]),
+
+  // queens slide in any direction
+  "q": rider([[1,0], [0,1], [1,1]]),
+
+  // kings jump directly to single space in any direction
+  "k": leaper([[1,0], [0,1], [1,1]])
+};
+
 // finds all possible moves for the specified piece on the board
 // output: [{piece, fromRank, fromFile, toRank, toFile}, ...]
 let getOptionsForPiece = function(piece, state) {
   let movesForPiece = rules[piece.p](piece, state);
-  return movesForPiece.map(function(move) {
-    return {piece: piece.p, fromRank: piece.rank, fromFile: piece.file, toRank: move[0], toFile: move[1]};
-  });
+  return movesForPiece.map(move => ({piece: piece.p, fromRank: piece.rank, fromFile: piece.file, toRank: move[0], toFile: move[1]}));
 };
 
 // get castling moves for player
@@ -226,7 +235,9 @@ let getCastlingOptions = function(player, state) {
   let moves = [];
   let castling = state.castling[player];
   let rank = player === 'w' ? 7 : 0;
-  // check that castling is still available and that the spaces in between are empty
+
+  // check that castling is still available (implies pieces involved haven't been moved yet)
+  // and that the spaces in between are empty
   if(castling.k && !pieceAt(rank, 5, state) && !pieceAt(rank, 6, state)) {
     // kingside castle
     moves.push({piece: 'k', fromRank: rank, fromFile: 4, toRank: rank, toFile: 6, castle: true});
@@ -290,11 +301,11 @@ var moveOptions = getOptionsForPlayer(gameState, gameState.playerTurn);
 moveOptions.forEach(opt => console.log(formatMove(opt)));
 
 // print summary
-let uniquePieces = Object.keys(moveOptions.reduce((pre, move) => {
+let uniquePieceCount = Object.keys(moveOptions.reduce((pre, move) => {
     pre[move.piece+move.fromRank+move.fromFile] = true;
     return pre;
   }, {})).length;
 let playerName = gameState.playerTurn === 'w' ? 'white' : 'black';
-console.log(`${moveOptions.length} legal moves (${uniquePieces} unique pieces) for ${playerName} player`);
+console.log(`${moveOptions.length} legal moves (${uniquePieceCount} unique pieces) for ${playerName} player`);
 
 // all done!
