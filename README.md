@@ -5,6 +5,8 @@ given a board state in [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwar
 * handles castling and en passant, but not check/checkmate restrictions
 * uses modern es6 features as much as possible in appropriate situations
 
+All code written by Tim Plummer (@Objelisks)
+
 
 running
 =======
