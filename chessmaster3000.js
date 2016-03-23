@@ -285,27 +285,8 @@ let formatMove = function(move) {
   return text;
 };
 
-
-
-// actual program execution time
-if(process.argv.length < 3) {
-  console.log('SYNTAX: node chessmaster3000.js input-file-name.fen');
-  return;
+module.exports = {
+  importFile: importFile,
+  getOptionsForPlayer: getOptionsForPlayer,
+  formatMove: formatMove
 }
-
-// handling cmd line input
-let gameState = importFile(process.argv[2]);
-
-// print individual moves
-var moveOptions = getOptionsForPlayer(gameState, gameState.playerTurn);
-moveOptions.forEach(opt => console.log(formatMove(opt)));
-
-// print summary
-let uniquePieceCount = Object.keys(moveOptions.reduce((pre, move) => {
-    pre[move.piece+move.fromRank+move.fromFile] = true;
-    return pre;
-  }, {})).length;
-let playerName = gameState.playerTurn === 'w' ? 'white' : 'black';
-console.log(`${moveOptions.length} legal moves (${uniquePieceCount} unique pieces) for ${playerName} player`);
-
-// all done!
