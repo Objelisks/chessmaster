@@ -191,9 +191,9 @@ const rules = {
 
     // two space movement as first move
     if(side === 1 && rank === 1 && !pieceAt(rank+1, file, state)) {
-        moves.push([rank+2, file]);
+      moves.push([rank+2, file]);
     } else if(side === -1 && rank === 6 && !pieceAt(rank-1, file, state)) {
-        moves.push([rank-2, file]);
+      moves.push([rank-2, file]);
     }
 
     // attack movement including en passant
