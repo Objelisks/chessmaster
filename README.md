@@ -11,6 +11,7 @@ running
 Tested using Node.js 4.4.0
 
 run: `node run input1.fen`
+
 tests: `node test`
 
 inputs
